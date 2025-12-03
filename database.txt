@@ -1,0 +1,13 @@
+c2bcea80c1f7ef910a911ad6535e3b9d09d7277f40b5245c40b86f73039e6053
+{
+  "area": 100,
+  "address": "Naugarduko g. 24, Vilnius",
+  "roomNumber": 3,
+}
+
+b4d10ba71923157a145f13f3d4afb70d467b23cd4edc49c92aa1b40fcc860ba3
+{
+  "area": 120,
+  "address": "Didlaukio g. 47, Vilnius",
+  "roomNumber": 4
+}
