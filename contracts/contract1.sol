@@ -11,9 +11,8 @@ contract RealEstate {
       bytes32 housingInfoHash;
       uint price;
       bool isActive;
-      bool hasPrice;
+      bool priceConfirmed;
       bool buyerAccepted;
-      bool paid;
   }
 
   // events
@@ -37,6 +36,7 @@ contract RealEstate {
 
   // Create offer (seller should call this) hash - hash of housing info json, assignedAgent - agent that seller choses (another address)
   function createOffer(bytes32 hash, address assignedAgent) public {
+    require(assignedAgent != address(0));
     // incerement offerID
     offerID+=1;
     // create Offer
@@ -47,7 +47,7 @@ contract RealEstate {
     offer.housingInfoHash = hash;
     offer.price = 0;
     offer.isActive = true;
-    offer.hasPrice = false;
+    offer.priceConfirmed = false;
     offer.buyerAccepted = false;
     // add to mapping
     offers[offerID] = offer;
@@ -60,11 +60,11 @@ contract RealEstate {
 }
 
   // propose price function. Called by agent.
-  function proposePrice(uint offerNum, uint32 price) public {
+  function proposePrice(uint offerNum, uint price) public {
     require(offers[offerNum].isActive == true); //checks if the offer is active
-    require(offers[offerNum].hasPrice == false); // checks if the price already was proposed
-
+    require(offers[offerNum].priceConfirmed == false); // checks if the price already was proposed
     require(msg.sender == offers[offerNum].agent); //only agent call propose price
+    require(price > 0);
     offers[offerNum].price = price;
     emit priceOffered(offerNum, price);
   }
@@ -72,23 +72,26 @@ contract RealEstate {
   // Seller should call this and agree or disagree on the price
   function acceptProposedPrice(uint offerNum, bool accept) public {
     require(offers[offerNum].isActive == true);
-    require(offers[offerNum].hasPrice == false);
+    require(offers[offerNum].priceConfirmed == false);
 
     require(msg.sender == offers[offerNum].seller); //only seller can call this
     require(offers[offerNum].price != 0);
     if (accept) {
-      offers[offerNum].hasPrice = true; // if accepts - update offer state, emit event
+      offers[offerNum].priceConfirmed = true; // if accepts - update offer state, emit event
       emit priceAccepted(offerNum, offers[offerNum].price);
     }
     else{
+      offers[offerNum].priceConfirmed = false;
+      offers[offerNum].price = 0;
       emit priceDeclined(offerNum, offers[offerNum].price);
     }
   }
 
   // agent should find buyer (off-chain) and add him to offer (on-chain)
   function findBuyer(uint offerNum, address foundBuyer) public{
+    require(foundBuyer != address(0));
     require(offers[offerNum].isActive == true);
-    require(offers[offerNum].hasPrice == true);
+    require(offers[offerNum].priceConfirmed == true);
 
     require(msg.sender == offers[offerNum].agent);
     require(offers[offerNum].buyerAccepted != true); //can be called again even until found buyer accepts offer
@@ -101,18 +104,22 @@ contract RealEstate {
 
     require(offers[offerNum].buyer != address(0));
     require(msg.sender == offers[offerNum].buyer);
-    require(offers[offerNum].hasPrice == true);
+    require(offers[offerNum].priceConfirmed == true);
     if (accept == true) {
       offers[offerNum].buyerAccepted = true;
       emit buyerAccepted(offerNum, msg.sender, offers[offerNum].price);
     }
-    else emit buyerDeclined(offerNum, msg.sender);
+    else{
+      offers[offerNum].buyerAccepted = false;
+      offers[offerNum].buyer = address(0);
+      emit buyerDeclined(offerNum, msg.sender);
+    } 
   }
 
   function Pay(uint offerNum) public payable {
     // check offer state
     require(offers[offerNum].isActive == true);
-    require(offers[offerNum].hasPrice == true);
+    require(offers[offerNum].priceConfirmed == true);
     require(offers[offerNum].buyerAccepted == true);
 
     //check sender address and value
@@ -120,8 +127,8 @@ contract RealEstate {
     require(msg.value == offers[offerNum].price);
 
     // transfer funds into payout mapping (good practice: pull over push)
-    payouts[offers[offerNum].seller] = msg.value * 95 / 100;
-    payouts[offers[offerNum].agent] = msg.value * 5 / 100;
+    payouts[offers[offerNum].seller] += msg.value * 95 / 100;
+    payouts[offers[offerNum].agent] += msg.value * 5 / 100;
     
     // offer completed, disable it
     offers[offerNum].isActive = false;
