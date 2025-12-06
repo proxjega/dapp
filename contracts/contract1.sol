@@ -147,6 +147,7 @@ contract RealEstate {
     uint fund = payouts[msg.sender];
     require(fund!=0);
     payouts[msg.sender] = 0;
-    payable(msg.sender).transfer(fund);
+    (bool sent, ) = msg.sender.call{value: fund}("");
+    require(sent);
   }
 }
