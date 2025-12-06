@@ -17,7 +17,7 @@ contract RealEstate {
 
   // events
   event offerCreated(uint offerNum, address assignedAgent);
-  event priceOffered(uint offerNum, uint price);
+  event priceProposed(uint offerNum, uint price);
   event priceAccepted(uint offerNum, uint price);
   event priceDeclined(uint offerNum, uint price);
   event buyerFound(uint offerNum, address buyer);
@@ -69,7 +69,7 @@ contract RealEstate {
     require(offers[offerNum].price == 0); // so agent wont be able to propose price again
     require(price > 0);
     offers[offerNum].price = price;
-    emit priceOffered(offerNum, price);
+    emit priceProposed(offerNum, price);
   }
 
   // Seller should call this and agree or disagree on the price
