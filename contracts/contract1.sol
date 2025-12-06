@@ -56,14 +56,17 @@ contract RealEstate {
 
   // get offer info
   function getOffer(uint id) public view returns (Offer memory) {
+    require(id > 0 && id <= offerID);
     return offers[id];
 }
 
   // propose price function. Called by agent.
   function proposePrice(uint offerNum, uint price) public {
+    require(offerNum > 0 && offerNum <= offerID);
     require(offers[offerNum].isActive == true); //checks if the offer is active
-    require(offers[offerNum].priceConfirmed == false); // checks if the price already was proposed
+    require(offers[offerNum].priceConfirmed == false); // checks if the price confirmed
     require(msg.sender == offers[offerNum].agent); //only agent call propose price
+    require(offers[offerNum].price == 0); // so agent wont be able to propose price again
     require(price > 0);
     offers[offerNum].price = price;
     emit priceOffered(offerNum, price);
@@ -71,6 +74,7 @@ contract RealEstate {
 
   // Seller should call this and agree or disagree on the price
   function acceptProposedPrice(uint offerNum, bool accept) public {
+    require(offerNum > 0 && offerNum <= offerID);
     require(offers[offerNum].isActive == true);
     require(offers[offerNum].priceConfirmed == false);
 
@@ -89,6 +93,7 @@ contract RealEstate {
 
   // agent should find buyer (off-chain) and add him to offer (on-chain)
   function findBuyer(uint offerNum, address foundBuyer) public{
+    require(offerNum > 0 && offerNum <= offerID);
     require(foundBuyer != address(0));
     require(offers[offerNum].isActive == true);
     require(offers[offerNum].priceConfirmed == true);
@@ -100,6 +105,7 @@ contract RealEstate {
   }
 
   function acceptOffer(uint offerNum, bool accept) public {
+    require(offerNum > 0 && offerNum <= offerID);
     require(offers[offerNum].isActive == true);
 
     require(offers[offerNum].buyer != address(0));
@@ -118,6 +124,7 @@ contract RealEstate {
 
   function Pay(uint offerNum) public payable {
     // check offer state
+    require(offerNum > 0 && offerNum <= offerID);
     require(offers[offerNum].isActive == true);
     require(offers[offerNum].priceConfirmed == true);
     require(offers[offerNum].buyerAccepted == true);
