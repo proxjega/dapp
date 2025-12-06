@@ -62,10 +62,10 @@ contract RealEstate {
 
   // propose price function. Called by agent.
   function proposePrice(uint offerNum, uint price) public {
-    require(offerNum > 0 && offerNum <= offerID);
-    require(offers[offerNum].isActive == true); //checks if the offer is active
-    require(offers[offerNum].priceConfirmed == false); // checks if the price confirmed
-    require(msg.sender == offers[offerNum].agent); //only agent call propose price
+    require(offerNum > 0 && offerNum <= offerID, "Offer with this number does not exists!");
+    require(offers[offerNum].isActive == true, "This offer is inactive!"); //checks if the offer is active
+    require(offers[offerNum].priceConfirmed == false, "Price of this offer is already confirmed!"); // checks if the price confirmed
+    require(msg.sender == offers[offerNum].agent, "Only agent can call this!"); //only agent call propose price
     require(offers[offerNum].price == 0); // so agent wont be able to propose price again
     require(price > 0);
     offers[offerNum].price = price;
@@ -74,12 +74,12 @@ contract RealEstate {
 
   // Seller should call this and agree or disagree on the price
   function acceptProposedPrice(uint offerNum, bool accept) public {
-    require(offerNum > 0 && offerNum <= offerID);
-    require(offers[offerNum].isActive == true);
-    require(offers[offerNum].priceConfirmed == false);
+    require(offerNum > 0 && offerNum <= offerID, "Offer with this number does not exists!");
+    require(offers[offerNum].isActive == true, "This offer is inactive!");
+    require(offers[offerNum].priceConfirmed == false, "Price of this offer is already confirmed!");
 
-    require(msg.sender == offers[offerNum].seller); //only seller can call this
-    require(offers[offerNum].price != 0);
+    require(msg.sender == offers[offerNum].seller, "Only seller can call this!"); //only seller can call this
+    require(offers[offerNum].price != 0, "There is no proposed price!");
     if (accept) {
       offers[offerNum].priceConfirmed = true; // if accepts - update offer state, emit event
       emit priceAccepted(offerNum, offers[offerNum].price);
@@ -93,24 +93,24 @@ contract RealEstate {
 
   // agent should find buyer (off-chain) and add him to offer (on-chain)
   function findBuyer(uint offerNum, address foundBuyer) public{
-    require(offerNum > 0 && offerNum <= offerID);
-    require(foundBuyer != address(0));
-    require(offers[offerNum].isActive == true);
-    require(offers[offerNum].priceConfirmed == true);
+    require(offerNum > 0 && offerNum <= offerID, "Offer with this number does not exists!");
+    require(foundBuyer != address(0), "Buyer address is null");
+    require(offers[offerNum].isActive == true, "This offer is inactive!");
+    require(offers[offerNum].priceConfirmed == true, "Price is not confirmed yet");
 
-    require(msg.sender == offers[offerNum].agent);
-    require(offers[offerNum].buyerAccepted != true); //can be called again even until found buyer accepts offer
+    require(msg.sender == offers[offerNum].agent, "Only agent can call this!");
+    require(offers[offerNum].buyerAccepted != true, "Buyer already accepted offer!"); //can be called again even until found buyer accepts offer
     offers[offerNum].buyer = foundBuyer;
     emit buyerFound(offerNum, foundBuyer);
   }
 
   function acceptOffer(uint offerNum, bool accept) public {
-    require(offerNum > 0 && offerNum <= offerID);
-    require(offers[offerNum].isActive == true);
+    require(offerNum > 0 && offerNum <= offerID, "Offer with this number does not exists!");
+    require(offers[offerNum].isActive == true, "This offer is inactive!");
 
-    require(offers[offerNum].buyer != address(0));
-    require(msg.sender == offers[offerNum].buyer);
-    require(offers[offerNum].priceConfirmed == true);
+    require(offers[offerNum].buyer != address(0), "There is no buyer (buyer address is null)");
+    require(msg.sender == offers[offerNum].buyer, "Only buyer can call this!");
+    require(offers[offerNum].priceConfirmed == true, "There is no confirmed price yet!");
     if (accept == true) {
       offers[offerNum].buyerAccepted = true;
       emit buyerAccepted(offerNum, msg.sender, offers[offerNum].price);
@@ -124,14 +124,14 @@ contract RealEstate {
 
   function Pay(uint offerNum) public payable {
     // check offer state
-    require(offerNum > 0 && offerNum <= offerID);
-    require(offers[offerNum].isActive == true);
-    require(offers[offerNum].priceConfirmed == true);
-    require(offers[offerNum].buyerAccepted == true);
+    require(offerNum > 0 && offerNum <= offerID, "Offer with this number does not exists!");
+    require(offers[offerNum].isActive == true, "This offer is inactive!");
+    require(offers[offerNum].priceConfirmed == true, "There is no confirmed price yet!");
+    require(offers[offerNum].buyerAccepted == true, "Buyer did not accept offer yet");
 
     //check sender address and value
-    require(msg.sender == offers[offerNum].buyer);
-    require(msg.value == offers[offerNum].price);
+    require(msg.sender == offers[offerNum].buyer, "Only buyer can call this");
+    require(msg.value == offers[offerNum].price, "Value of this transaction does not match the price");
 
     // transfer funds into payout mapping (good practice: pull over push)
     payouts[offers[offerNum].seller] += msg.value * 95 / 100;
@@ -145,7 +145,7 @@ contract RealEstate {
   // everyone can withdraw their funds (good practice: pull over push)
   function getFunds() public {
     uint fund = payouts[msg.sender];
-    require(fund!=0);
+    require(fund!=0, "There is nothing to withdraw");
     payouts[msg.sender] = 0;
     (bool sent, ) = msg.sender.call{value: fund}("");
     require(sent);
