@@ -151,3 +151,4 @@ contract RealEstate {
     require(sent);
   }
 }
+
