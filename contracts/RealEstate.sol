@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.21;
 
 contract RealEstate {
+  address owner;
 
   // Main offer structure
   struct Offer{
@@ -40,17 +41,16 @@ contract RealEstate {
     // incerement offerID
     offerID+=1;
     // create Offer
-    Offer memory offer;
-    offer.seller = msg.sender;
-    offer.buyer = address(0);
-    offer.agent = assignedAgent;
-    offer.housingInfoHash = hash;
-    offer.price = 0;
-    offer.isActive = true;
-    offer.priceConfirmed = false;
-    offer.buyerAccepted = false;
-    // add to mapping
-    offers[offerID] = offer;
+    offers[offerID] = Offer({
+      seller: msg.sender,
+      buyer: address(0),
+      agent: assignedAgent,
+      housingInfoHash: hash,
+      price: 0,
+      isActive: true,
+      priceConfirmed: false,
+      buyerAccepted: false
+    });
     emit offerCreated(offerID, assignedAgent);
   }
 
