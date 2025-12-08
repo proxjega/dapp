@@ -1,42 +1,25 @@
- const contractAddress = "YOUR_CONTRACT_ADDRESS";
-    const abi = [
-      "function createOffer(bytes32 hash, address assignedAgent) public",
-      "function getOffer(uint id) public view returns (tuple(address seller, address buyer, address agent, bytes32 housingInfoHash, uint price, bool isActive, bool priceConfirmed, bool buyerAccepted))"
-    ];
+// Modern dapp browsers...
+async function init(){
+  await window.ethereum.request({ method: "eth_requestAccounts" });
 
-    let provider;
-    let signer;
-    let contract;
-
-    async function init() {
-      if (window.ethereum) {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        contract = new ethers.Contract(contractAddress, abi, signer);
-      }
-    }
-    init();
-
-    async function createOffer() {
-      try {
-        const hash = document.getElementById("hashInput").value;
-        const agent = document.getElementById("agentInput").value;
-
-        const tx = await contract.createOffer(hash, agent);
-        document.getElementById("createStatus").innerText = "Transaction sent: " + tx.hash;
-        await tx.wait();
-        document.getElementById("createStatus").innerText = "Offer created successfully.";
-      } catch (err) {
-        document.getElementById("createStatus").innerText = "Error: " + err.message;
-      }
-    }
-
-    async function loadOffer() {
-      try {
-        const id = document.getElementById("offerIdInput").value;
-        const offer = await contract.getOffer(id);
-        document.getElementById("offerData").textContent = JSON.stringify(offer, null, 2);
-      } catch (err) {
-        document.getElementById("offerData").textContent = "Error: " + err.message;
-      }
-    }
+  if (window.ethereum) {
+  App.web3Provider = window.ethereum;
+  try {
+  // Request account access
+  await window.ethereum.enable();
+  } catch (error) {
+  // User denied account access...
+  console.error("User denied account access")
+  }
+  }
+  // Legacy dapp browsers...
+  else if (window.web3) {
+  App.web3Provider = window.web3.currentProvider;
+  }
+  // If no injected web3 instance is detected, fall back to Ganache
+  else {
+  App.web3Provider = new Web3.providers.HttpProvider('http://localhost:7545');
+  }
+  web3 = new Web3(App.web3Provider);
+}
+init();
