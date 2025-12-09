@@ -1,25 +1,36 @@
-let web3;
-let wsweb3;
+let web3;         // sending
+let httpWeb3;     // calling
+let wsWeb3;       // events
 
-
-let contract;
+let contract;     // send
+let contractRead; // call
+let contractWS;   // events
 let activeAccount;
+
 async function init() {
-    if (window.ethereum) {
-        web3 = new Web3("wss://sepolia.infura.io/ws/v3/fafad0ce2b5d464290c02a82f7781499");
-    }
-    // load the compiled contract JSON (assuming you copied it to front-end folder)
-    const RealEstateJSON = await fetch('../build/contracts/RealEstate.json').then(res => res.json());
-    // get ABI
+    // 1. MetaMask provider — send only
+    web3 = new Web3(window.ethereum);
+
+    // 2. HTTP provider — call
+    httpWeb3 = new Web3("https://sepolia.infura.io/v3/fafad0ce2b5d464290c02a82f7781499");
+
+    // 3. WebSocket provider — events only
+    wsWeb3 = new Web3("wss://sepolia.infura.io/ws/v3/fafad0ce2b5d464290c02a82f7781499");
+
+    const RealEstateJSON = await fetch("../build/contracts/RealEstate.json").then(r => r.json());
     const abi = RealEstateJSON.abi;
+    const address = "0xaD175D6b0f6aeeae63EF8c0bae72Dc8324286208";
 
+    // Contract for sending transactions via MetaMask
+    contract = new web3.eth.Contract(abi, address);
 
-    // create contract instance
-    contract = await new web3.eth.Contract(abi, "0xaD175D6b0f6aeeae63EF8c0bae72Dc8324286208");
-    console.log("Contract loaded:", contract)
-    console.log("contract loaded:", contract)
+    // Contract for read-only calls
+    contractRead = new httpWeb3.eth.Contract(abi, address);
 
-    contract.events.offerCreated({ fromBlock: 'latest' })
+    // Contract for event subscriptions
+    contractWS = new wsWeb3.eth.Contract(abi, address);
+
+    contractWS.events.offerCreated({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, assignedAgent } = event.returnValues;
             const propStatus = document.getElementById("propStatus");
@@ -27,7 +38,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.priceProposed({ fromBlock: 'latest' })
+    contractWS.events.priceProposed({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, price } = event.returnValues;
             const propStatus = document.getElementById("acceptStatus");
@@ -35,7 +46,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.priceAccepted({ fromBlock: 'latest' })
+    contractWS.events.priceAccepted({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, price } = event.returnValues;
             const propStatus = document.getElementById("propStatus");
@@ -43,7 +54,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.priceDeclined({ fromBlock: 'latest' })
+    contractWS.events.priceDeclined({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, price } = event.returnValues;
             const propStatus = document.getElementById("propStatus");
@@ -51,7 +62,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.buyerFound({ fromBlock: 'latest' })
+    contractWS.events.buyerFound({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, buyer } = event.returnValues;
             const propStatus = document.getElementById("acceptOfferStatus");
@@ -59,7 +70,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.buyerAccepted({ fromBlock: 'latest' })
+    contractWS.events.buyerAccepted({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, buyer, price } = event.returnValues;
             const propStatus = document.getElementById("withdrawStatus");
@@ -67,7 +78,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.buyerDeclined({ fromBlock: 'latest' })
+    contractWS.events.buyerDeclined({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, buyer, price } = event.returnValues;
             const propStatus = document.getElementById("withdrawStatus");
@@ -75,7 +86,7 @@ async function init() {
             console.log("Offer created event:", offerNum, assignedAgent);
         })
 
-    contract.events.paymentSent({ fromBlock: 'latest' })
+    contractWS.events.paymentSent({ fromBlock: 'latest' })
         .on('data', event => {
             const { offerNum, buyer, price } = event.returnValues;
             const propStatus = document.getElementById("withdrawStatus");
@@ -97,7 +108,7 @@ async function loadAccounts() {
             console.log('MetaMask accounts:', accounts);
             
             // Use the first account as default
-            const activeAccount = accounts[0];
+            activeAccount = accounts[0];
         } catch (err) {
             console.error('User denied account access or error occurred:', err);
         }
@@ -145,6 +156,11 @@ function shorten(addr) {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+
 // helper
 function getRevertReason(err) {
     // Check if err.cause exists (Ganache / Web3 throws nested error)
@@ -185,9 +201,11 @@ async function createOffer() {
 
         // Use the currently selected account as msg.sender
         console.log(contract)
-        await contract.methods.createOffer(bytes32Hash, agentInput).call({ from: sender, gas: 200000});
+        await contractRead.methods.createOffer(bytes32Hash, agentInput).call({ from: sender, gas: 200000});
+        await sleep(1000)
         await contract.methods.createOffer(bytes32Hash, agentInput).send({ from: sender, gas: 200000});
-        let id = await contract.methods.getLastOfferId().call({from: sender});
+        await sleep(1000)
+        let id = await contractRead.methods.getLastOfferId().call({from: sender});
         statusEl.textContent = `Offer created successfully! Your offerID: ${id}`;
         document.getElementById("hashInput").value = "";
         document.getElementById("agentInput").value = "";
@@ -207,7 +225,7 @@ async function loadOffer() {
     try {
         const sender = activeAccount;
         console.log(contract)
-        let data = await contract.methods.getOffer(Id).call();
+        let data = await contractRead.methods.getOffer(Id).call();
          // Format output
         let output = `Offer ${Id} info:\n`;
         for (const key in data) {
@@ -236,7 +254,7 @@ async function acceptProposedPrice(accept) {
     const sender = activeAccount;
 
     try {
-        await contract.methods.acceptProposedPrice(Id, accept).call({ from: sender});
+        await contractRead.methods.acceptProposedPrice(Id, accept).call({ from: sender});
         await contract.methods.acceptProposedPrice(Id, accept).send({ from: sender});
         if (accept) {
             acceptResultEl.textContent = "Price accepted succesfully!";
@@ -265,7 +283,7 @@ async function proposePrice() {
         return;
     }
     try {
-        await contract.methods.proposePrice(Id, price).call({ from: sender});
+        await contractRead.methods.proposePrice(Id, price).call({ from: sender});
         await contract.methods.proposePrice(Id, price).send({ from: sender});
         resultEl.textContent = "Price proposed!";
         document.getElementById("propOfferId").value="";
@@ -281,8 +299,8 @@ async function withdrawFunds() {
     const statusEl = document.getElementById("withdrawStatus")
     const sender = activeAccount;
     try {
-        const amount = await contract.methods.payouts(sender).call({ from: sender});
-        await contract.methods.getFunds().call({ from: sender});
+        const amount = await contractRead.methods.payouts(sender).call({ from: sender});
+        await contractRead.methods.getFunds().call({ from: sender});
         await contract.methods.getFunds().send({ from: sender});
         statusEl.textContent = `Withdrew ${amount} wei successfully`;
     }
@@ -304,7 +322,7 @@ async function findBuyer() {
         return;
     }
     try {
-        await contract.methods.findBuyer(Id, buyerAdress).call({ from: sender});
+        await contractRead.methods.findBuyer(Id, buyerAdress).call({ from: sender});
         await contract.methods.findBuyer(Id, buyerAdress).send({ from: sender});
         resultEl.textContent = "Buyer notified"
         document.getElementById("findOfferId").value="";
@@ -329,7 +347,7 @@ async function acceptOffer(accept) {
     const sender = activeAccount;
 
     try {
-        await contract.methods.acceptOffer(Id, accept).call({ from: sender});
+        await contractRead.methods.acceptOffer(Id, accept).call({ from: sender});
         await contract.methods.acceptOffer(Id, accept).send({ from: sender});
         if (accept) {
             acceptResultEl.textContent = "Offer accepted succesfully!";
@@ -356,7 +374,7 @@ async function  Pay(){
         return;
     }
     try {
-        await contract.methods.Pay(Id).call({ from: sender, value: amount});
+        await contractRead.methods.Pay(Id).call({ from: sender, value: amount});
         await contract.methods.Pay(Id).send({ from: sender, value: amount});
         resultEl.textContent = "Payment succesfull!";
     }
