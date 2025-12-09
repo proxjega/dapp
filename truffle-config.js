@@ -43,7 +43,7 @@
 
 // require('dotenv').config();
 // const { MNEMONIC, PROJECT_ID } = process.env;
-
+require('dotenv').config();
 const HDWalletProvider = require('@truffle/hdwallet-provider');
 
 module.exports = {
@@ -70,6 +70,12 @@ module.exports = {
      network_id: "*",       // Any network (default: none)
      websockets: true
     },
+    sepolia: {
+      provider: () => new HDWalletProvider(process.env.PRIVATE_KEY, process.env.SEPOLIA_RPC),
+      network_id: 11155111, // Sepolia network ID
+      timeoutBlocks: 200,
+      skipDryRun: true
+    }
   },
 
   mocha: {

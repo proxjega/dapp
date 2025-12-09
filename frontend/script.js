@@ -1,11 +1,16 @@
-const web3 = new Web3("ws://127.0.0.1:8545");
+let web3;
+
+// = new Web3("wss://sepolia.infura.io/ws/v3/fafad0ce2b5d464290c02a82f7781499");
 
 let contract;
 let activeAccount;
 async function init() {
-    const accounts = await web3.eth.getAccounts();
-    console.log("Accounts:", accounts);
-
+    if (window.ethereum) {
+        web3 = new Web3(window.ethereum);
+        await window.ethereum.enable(); // request access
+    }
+    console.log("web3:", web3)
+    
     // load the compiled contract JSON (assuming you copied it to front-end folder)
     const RealEstateJSON = await fetch('../build/contracts/RealEstate.json').then(res => res.json());
     // get ABI
@@ -17,7 +22,7 @@ async function init() {
 
 
     // create contract instance
-    contract = await new web3.eth.Contract(abi, "0x0DC170B5A8650cE9c51612E4672aa5A58BE25d20");
+    contract = await new web3.eth.Contract(abi, "0xaD175D6b0f6aeeae63EF8c0bae72Dc8324286208");
     console.log("Contract loaded:", contract)
 
     contract.events.offerCreated({ fromBlock: 'latest' })
@@ -91,7 +96,7 @@ window.addEventListener("DOMContentLoaded", loadAccounts);
 
 async function loadAccounts() {
   if (!window.ethereum) return;
-  const accounts = await web3.eth.getAccounts();
+
 
   const list = document.getElementById("accountList");
   const toggle = document.getElementById("accountDropdown");
@@ -137,13 +142,13 @@ function shorten(addr) {
 function getRevertReason(err) {
     // Check if err.cause exists (Ganache / Web3 throws nested error)
     if (err && err.cause && typeof err.cause.message === "string") {
-        const match = err.cause.message.match(/revert (.*)/);
+        const match = err.cause.message.match(/reverted: (.*)/);
         if (match && match[1]) return match[1];
     }
 
     // Fallback: try err.message
     if (err && typeof err.message === "string") {
-        const match = err.message.match(/revert (.*)/);
+        const match = err.message.match(/reverted: (.*)/);
         if (match && match[1]) return match[1];
     }
 
