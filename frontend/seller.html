@@ -76,15 +76,10 @@
           placeholder="Enter offer ID">
       </div>
       <div class="mb-3">
-        <label class="form-label">Action</label>
-        <select class="form-select" id="acceptAction">
-          <option value="true">Accept</option>
-          <option value="false">Decline</option>
-        </select>
       </div>
-      <button class="btn btn-primary" id="acceptOfferBtn">Accept</button>
-      <button class="btn btn-danger" id="acceptOfferBtn">Decline</button>
-      <p id="createStatus" class="mt-3 text-muted"></p>
+      <button class="btn btn-primary" id="acceptOfferBtn" onclick="acceptOffer(true)">Accept</button>
+      <button class="btn btn-danger" id="acceptOfferBtn" onclick="acceptOffer(false)">Decline</button>
+      <p id="acceptStatus" class="mt-3 text-muted"></p>
 
       <hr class="my-4" />
 

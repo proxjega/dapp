@@ -17,7 +17,7 @@ async function init() {
 
 
     // create contract instance
-    contract = await new web3.eth.Contract(abi, "0x5140F07E91aa7c08240E4FD9F67947c90933d0D0");
+    contract = await new web3.eth.Contract(abi, "0xabA5aB75b40C7068024870065D92A8835C2B14a2");
 }
 
 function getRevertReason(err) {
@@ -89,6 +89,7 @@ async function createOffer() {
     const statusEl = document.getElementById("createStatus");
     const hashInput = document.getElementById("hashInput").value;
     const agentInput = document.getElementById("agentInput").value;
+    const sender = activeAccount;
 
     if (!hashInput || !agentInput) {
         statusEl.textContent = "Please enter both a hash and agent address.";
@@ -96,8 +97,6 @@ async function createOffer() {
     }
 
     try {
-        // Convert the hash to bytes32 if it’s a string
-        // If user already inputs a valid 0x-prefixed bytes32, skip this
         let bytes32Hash;
         if (hashInput.startsWith("0x") && hashInput.length === 66) {
             bytes32Hash = hashInput;
@@ -106,8 +105,8 @@ async function createOffer() {
         }
 
         // Use the currently selected account as msg.sender
-        const sender = activeAccount;
         console.log(contract)
+        await contract.methods.createOffer(bytes32Hash, agentInput).call({ from: sender, gas: 200000});
         await contract.methods.createOffer(bytes32Hash, agentInput).send({ from: sender, gas: 200000});
         let id = await contract.methods.getLastOfferId().call({from: sender});
         statusEl.textContent = `Offer created successfully! Your offerID: ${id}`;
@@ -124,13 +123,12 @@ async function loadOffer() {
     const offerData = document.getElementById("offerData");
     if (!Id) {
         offerData.textContent = "Enter a valid offer ID";
+        return;
     }
     try {
-        // Use the currently selected account as msg.sender
         const sender = activeAccount;
         console.log(contract)
-        let data = await contract.methods.getOffer(Id).call({ from: sender});
-        let id = await contract.methods.getLastOfferId().call({from: sender});
+        let data = await contract.methods.getOffer(Id).call();
          // Format output
         let output = `Offer ${Id} info:\n`;
         for (const key in data) {
@@ -146,5 +144,67 @@ async function loadOffer() {
         let message = getRevertReason(err)
         console.log(message)
         offerData.textContent = message;
+    }
+}
+
+async function acceptOffer(accept) {
+    const Id = document.getElementById("acceptOfferId").value;
+    const acceptResultEl = document.getElementById("acceptStatus");
+     if (!Id) {
+        acceptResultEl.textContent = "Enter a valid offer ID";
+        return;
+    }
+    const sender = activeAccount;
+
+    try {
+        await contract.methods.acceptProposedPrice(Id, accept).call({ from: sender});
+        await contract.methods.acceptProposedPrice(Id, accept).send({ from: sender});
+        if (accept) {
+            acceptResultEl.textContent = "Offer accepted succesfully!";
+        }
+        else {
+            acceptResultEl.textContent = "Offer declined succesfully!";
+        }
+    }
+    catch (err) {
+        console.error(err);
+        let message = getRevertReason(err)
+        acceptResultEl.textContent = message;
+    }
+
+}
+
+async function proposePrice() {
+    const Id = document.getElementById("propOfferId").value;
+    const price = document.getElementById("propPrice").value;
+    const resultEl = document.getElementById("propStatus");
+    const sender = activeAccount;
+    if (!Id || !price) {
+        resultEl.textContent = "Enter valid ID and price";
+        return;
+    }
+    try {
+        await contract.methods.proposePrice(Id, price).call({ from: sender});
+        await contract.methods.proposePrice(Id, price).send({ from: sender});
+        resultEl.textContent = "Price proposed!";
+    }
+    catch (err) {
+        let message = getRevertReason(err)
+        console.log(message)
+        resultEl.textContent = message;
+    }
+}
+async function withdrawFunds() {
+    const statusEl = document.getElementById("withdrawStatus")
+    const sender = activeAccount;
+    try {
+        await contract.methods.getFunds().call({ from: sender});
+        await contract.methods.getFunds().send({ from: sender});
+    }
+    catch (err) {
+        console.log(err)
+        let message = getRevertReason(err)
+        console.log(message)
+        statusEl.textContent = message;
     }
 }

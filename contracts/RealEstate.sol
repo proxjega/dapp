@@ -70,8 +70,8 @@ contract RealEstate {
     require(offers[offerNum].isActive == true, "This offer is inactive!"); //checks if the offer is active
     require(offers[offerNum].priceConfirmed == false, "Price of this offer is already confirmed!"); // checks if the price confirmed
     require(msg.sender == offers[offerNum].agent, "Only agent can call this!"); //only agent call propose price
-    require(offers[offerNum].price == 0); // so agent wont be able to propose price again
-    require(price > 0);
+    require(offers[offerNum].price == 0, "Price is already proposed, wait for seller to confirm"); // so agent wont be able to propose price again
+    require(price > 0, "Price is 0");
     offers[offerNum].price = price;
     emit priceProposed(offerNum, price);
   }
