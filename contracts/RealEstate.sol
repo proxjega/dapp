@@ -35,6 +35,10 @@ contract RealEstate {
   //starting offerID
   uint offerID = 0;
 
+  function getLastOfferId() public view  returns( uint ){
+    return offerID;
+  }
+
   // Create offer (seller should call this) hash - hash of housing info json, assignedAgent - agent that seller choses (another address)
   function createOffer(bytes32 hash, address assignedAgent) public {
     require(assignedAgent != address(0));
@@ -56,7 +60,7 @@ contract RealEstate {
 
   // get offer info
   function getOffer(uint id) public view returns (Offer memory) {
-    require(id > 0 && id <= offerID);
+    require(id > 0 && id <= offerID, "Offer with this ID does not exists!");
     return offers[id];
 }
 
