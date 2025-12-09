@@ -1,29 +1,23 @@
 let web3;
+let wsweb3;
 
-// = new Web3("wss://sepolia.infura.io/ws/v3/fafad0ce2b5d464290c02a82f7781499");
 
 let contract;
 let activeAccount;
 async function init() {
     if (window.ethereum) {
-        web3 = new Web3(window.ethereum);
-        await window.ethereum.enable(); // request access
+        web3 = new Web3("wss://sepolia.infura.io/ws/v3/fafad0ce2b5d464290c02a82f7781499");
     }
-    console.log("web3:", web3)
-    
     // load the compiled contract JSON (assuming you copied it to front-end folder)
     const RealEstateJSON = await fetch('../build/contracts/RealEstate.json').then(res => res.json());
     // get ABI
     const abi = RealEstateJSON.abi;
 
-    // network ID from Ganache
-    const networkId = (await web3.eth.net.getId()).toString();
-
-
 
     // create contract instance
     contract = await new web3.eth.Contract(abi, "0xaD175D6b0f6aeeae63EF8c0bae72Dc8324286208");
     console.log("Contract loaded:", contract)
+    console.log("contract loaded:", contract)
 
     contract.events.offerCreated({ fromBlock: 'latest' })
         .on('data', event => {
@@ -95,8 +89,21 @@ async function init() {
 window.addEventListener("DOMContentLoaded", loadAccounts);
 
 async function loadAccounts() {
-  if (!window.ethereum) return;
-
+    let accounts;
+    if (window.ethereum) {
+        try {
+            // Request access to MetaMask accounts
+            accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            console.log('MetaMask accounts:', accounts);
+            
+            // Use the first account as default
+            const activeAccount = accounts[0];
+        } catch (err) {
+            console.error('User denied account access or error occurred:', err);
+        }
+    } else {
+        console.error('MetaMask not found');
+    }
 
   const list = document.getElementById("accountList");
   const toggle = document.getElementById("accountDropdown");
