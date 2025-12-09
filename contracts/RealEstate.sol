@@ -101,6 +101,7 @@ contract RealEstate {
     require(foundBuyer != address(0), "Buyer address is null");
     require(offers[offerNum].isActive == true, "This offer is inactive!");
     require(offers[offerNum].priceConfirmed == true, "Price is not confirmed yet");
+    require(offers[offerNum].buyer == address(0), "Buyer already found, waiting for his/her response...");
 
     require(msg.sender == offers[offerNum].agent, "Only agent can call this!");
     require(offers[offerNum].buyerAccepted != true, "Buyer already accepted offer!"); //can be called again even until found buyer accepts offer
@@ -115,6 +116,7 @@ contract RealEstate {
     require(offers[offerNum].buyer != address(0), "There is no buyer (buyer address is null)");
     require(msg.sender == offers[offerNum].buyer, "Only buyer can call this!");
     require(offers[offerNum].priceConfirmed == true, "There is no confirmed price yet!");
+    require(offers[offerNum].buyerAccepted == false, "Offer is already accepted!");
     if (accept == true) {
       offers[offerNum].buyerAccepted = true;
       emit buyerAccepted(offerNum, msg.sender, offers[offerNum].price);

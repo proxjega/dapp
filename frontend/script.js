@@ -1,4 +1,4 @@
-const web3 = new Web3("http://127.0.0.1:8545");
+const web3 = new Web3("ws://127.0.0.1:8545");
 
 let contract;
 let activeAccount;
@@ -17,23 +17,72 @@ async function init() {
 
 
     // create contract instance
-    contract = await new web3.eth.Contract(abi, "0xabA5aB75b40C7068024870065D92A8835C2B14a2");
-}
+    contract = await new web3.eth.Contract(abi, "0x0DC170B5A8650cE9c51612E4672aa5A58BE25d20");
+    console.log("Contract loaded:", contract)
 
-function getRevertReason(err) {
-    // Check if err.cause exists (Ganache / Web3 throws nested error)
-    if (err && err.cause && typeof err.cause.message === "string") {
-        const match = err.cause.message.match(/revert (.*)/);
-        if (match && match[1]) return match[1];
-    }
+    contract.events.offerCreated({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, assignedAgent } = event.returnValues;
+            const propStatus = document.getElementById("propStatus");
+            propStatus.textContent = `New offer created! ID: ${offerNum}, Agent: ${assignedAgent}`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
 
-    // Fallback: try err.message
-    if (err && typeof err.message === "string") {
-        const match = err.message.match(/revert (.*)/);
-        if (match && match[1]) return match[1];
-    }
+    contract.events.priceProposed({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, price } = event.returnValues;
+            const propStatus = document.getElementById("acceptStatus");
+            propStatus.textContent = `Price proposed in offer ${offerNum}: ${price}`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
 
-    return "Transaction failed";
+    contract.events.priceAccepted({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, price } = event.returnValues;
+            const propStatus = document.getElementById("propStatus");
+            propStatus.textContent = `Offer: ${offerNum}: Your price (${price}) was accepted!`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
+
+    contract.events.priceDeclined({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, price } = event.returnValues;
+            const propStatus = document.getElementById("propStatus");
+            propStatus.textContent = `Offer: ${offerNum}: Your price (${price}) was declined!`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
+
+    contract.events.buyerFound({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, buyer } = event.returnValues;
+            const propStatus = document.getElementById("acceptOfferStatus");
+            propStatus.textContent = `Buyer ${buyer} was assigned for offer ${offerNum}`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
+
+    contract.events.buyerAccepted({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, buyer, price } = event.returnValues;
+            const propStatus = document.getElementById("withdrawStatus");
+            propStatus.textContent = `Buyer ${buyer} accepted price ${price} in offer ${offerNum}`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
+
+    contract.events.buyerDeclined({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, buyer, price } = event.returnValues;
+            const propStatus = document.getElementById("withdrawStatus");
+            propStatus.textContent = `Buyer ${buyer} declined offer ${offerNum}`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
+
+    contract.events.paymentSent({ fromBlock: 'latest' })
+        .on('data', event => {
+            const { offerNum, buyer, price } = event.returnValues;
+            const propStatus = document.getElementById("withdrawStatus");
+            propStatus.textContent = `Payment for ${offerNum} is sent by buyer`;
+            console.log("Offer created event:", offerNum, assignedAgent);
+        })
 }
 
 
@@ -77,7 +126,6 @@ async function loadAccounts() {
   });
 
     init();
-
 }
 
 // helper
@@ -85,6 +133,25 @@ function shorten(addr) {
   return addr.slice(0, 6) + "..." + addr.slice(-4);
 }
 
+// helper
+function getRevertReason(err) {
+    // Check if err.cause exists (Ganache / Web3 throws nested error)
+    if (err && err.cause && typeof err.cause.message === "string") {
+        const match = err.cause.message.match(/revert (.*)/);
+        if (match && match[1]) return match[1];
+    }
+
+    // Fallback: try err.message
+    if (err && typeof err.message === "string") {
+        const match = err.message.match(/revert (.*)/);
+        if (match && match[1]) return match[1];
+    }
+
+    return "Transaction failed";
+}
+
+
+// seller functions
 async function createOffer() {
     const statusEl = document.getElementById("createStatus");
     const hashInput = document.getElementById("hashInput").value;
@@ -147,7 +214,7 @@ async function loadOffer() {
     }
 }
 
-async function acceptOffer(accept) {
+async function acceptProposedPrice(accept) {
     const Id = document.getElementById("acceptOfferId").value;
     const acceptResultEl = document.getElementById("acceptStatus");
      if (!Id) {
@@ -160,11 +227,12 @@ async function acceptOffer(accept) {
         await contract.methods.acceptProposedPrice(Id, accept).call({ from: sender});
         await contract.methods.acceptProposedPrice(Id, accept).send({ from: sender});
         if (accept) {
-            acceptResultEl.textContent = "Offer accepted succesfully!";
+            acceptResultEl.textContent = "Price accepted succesfully!";
         }
         else {
-            acceptResultEl.textContent = "Offer declined succesfully!";
+            acceptResultEl.textContent = "Price declined succesfully!";
         }
+        document.getElementById("acceptOfferId").value = "";
     }
     catch (err) {
         console.error(err);
@@ -174,6 +242,7 @@ async function acceptOffer(accept) {
 
 }
 
+// agent functions
 async function proposePrice() {
     const Id = document.getElementById("propOfferId").value;
     const price = document.getElementById("propPrice").value;
@@ -187,6 +256,8 @@ async function proposePrice() {
         await contract.methods.proposePrice(Id, price).call({ from: sender});
         await contract.methods.proposePrice(Id, price).send({ from: sender});
         resultEl.textContent = "Price proposed!";
+        document.getElementById("propOfferId").value="";
+        document.getElementById("propPrice").value="";
     }
     catch (err) {
         let message = getRevertReason(err)
@@ -198,8 +269,10 @@ async function withdrawFunds() {
     const statusEl = document.getElementById("withdrawStatus")
     const sender = activeAccount;
     try {
+        const amount = await contract.methods.payouts(sender).call({ from: sender});
         await contract.methods.getFunds().call({ from: sender});
         await contract.methods.getFunds().send({ from: sender});
+        statusEl.textContent = `Withdrew ${amount} wei successfully`;
     }
     catch (err) {
         console.log(err)
@@ -208,3 +281,79 @@ async function withdrawFunds() {
         statusEl.textContent = message;
     }
 }
+
+async function findBuyer() {
+    const Id = document.getElementById("findOfferId").value;
+    const buyerAdress = document.getElementById("buyerAddress").value;
+    const resultEl = document.getElementById("findStatus")
+    const sender = activeAccount;
+    if (!Id || !buyerAdress) {
+        resultEl.textContent = "Please enter both ID and buyer address!"
+        return;
+    }
+    try {
+        await contract.methods.findBuyer(Id, buyerAdress).call({ from: sender});
+        await contract.methods.findBuyer(Id, buyerAdress).send({ from: sender});
+        resultEl.textContent = "Buyer notified"
+        document.getElementById("findOfferId").value="";
+        document.getElementById("buyerAddress").value="";
+    }
+    catch (err) {
+        console.log(err)
+        let message = "Error assigning buyer:<br>Client Error:" + err.message + "<br> Blockchain error:"+ getRevertReason(err)
+        console.log(message)
+        resultEl.innerHTML = message;
+    }
+}
+
+// buyer functions
+async function acceptOffer(accept) {
+    const Id = document.getElementById("acceptOfferId").value;
+    const acceptResultEl = document.getElementById("acceptOfferStatus");
+    if (!Id) {
+        acceptResultEl.textContent = "Enter a valid offer ID";
+        return;
+    }
+    const sender = activeAccount;
+
+    try {
+        await contract.methods.acceptOffer(Id, accept).call({ from: sender});
+        await contract.methods.acceptOffer(Id, accept).send({ from: sender});
+        if (accept) {
+            acceptResultEl.textContent = "Offer accepted succesfully!";
+        }
+        else {
+            acceptResultEl.textContent = "Offer declined succesfully!";
+        }
+        document.getElementById("acceptOfferId").value="";
+    }
+    catch (err) {
+        console.error(err);
+        let message = getRevertReason(err)
+        acceptResultEl.textContent = message;
+    }
+}
+
+async function  Pay(){
+    const Id = document.getElementById("payOfferId").value;
+    const resultEl = document.getElementById("payStatus");
+    const sender = activeAccount;
+    const amount = document.getElementById("payAmount").value;
+    if (!Id || !amount) {
+        resultEl.textContent = "Please enter both ID and amount";
+        return;
+    }
+    try {
+        await contract.methods.Pay(Id).call({ from: sender, value: amount});
+        await contract.methods.Pay(Id).send({ from: sender, value: amount});
+        resultEl.textContent = "Payment succesfull!";
+    }
+    catch (err) {
+        console.error(err);
+        let message = getRevertReason(err)
+        resultEl.textContent = message;
+    }
+
+}
+
+
