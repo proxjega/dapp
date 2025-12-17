@@ -5,7 +5,7 @@
 ## Verslo logika
 Yra 3 šalis: Pardavėjas, nekilnojamo turto agentas, pirkėjas
 
-![alt text](image.png)
+![alt text](/data/contract.png)
 
 - Pardavėjas - sukuria pardavimo pasiūlymą, priima/atmeta pasiūlyta agento kainą
 - Agentas - įvertina būstą, siunčia kainą pardavėjui, randa pirkėja, siūlo jam būstą
@@ -16,3 +16,11 @@ Jei pirkėjas sutiko - Pardavėjas gauna pinigus, agentas - komisija už paslaug
 
 ## Išmanioji sutartis
 Parašyta naudojant Solidity kalbą. Pilna išmaniąją sutartį galima rasti aplanke **contracts**.
+
+## Front end
+Paprastas front-endas, padarytas naudojant Bootstrap ir web3.js. Leidžia pasinaudoti visomis išmanosios sutarties funkcijomis.
+![alt text](data/image.png)
+
+## Išmanoji sutartis buvo padeployinta Ethereum testiniame tinkle Sepolia
+https://sepolia.etherscan.io/address/0xaD175D6b0f6aeeae63EF8c0bae72Dc8324286208#writeContract
+![alt text](data/sepolia.png)
