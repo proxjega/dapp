@@ -1,9 +1,62 @@
 # Smart Contract and Decentralized Application
 
-This project contains a fully working **Ethereum smart contract with business logic**, connected to a **frontend decentralized application (DApp)**.  
+This project contains a fully working **Ethereum smart contract with business logic**, written in **Solidity**, connected to a **frontend decentralized application (DApp)**.  
 The system was successfully **tested on a local Ethereum testnet using Truffle**, and later **deployed to the Ethereum Sepolia testnet**.
 
 The repository includes the smart contract implementation, a simple web interface to interact with it, and the business workflow for a real estate transaction process.
+
+## Instalation and setup
+
+clone this repository
+
+```bash
+git clone https://github.com/proxjega/dapp.git
+cd dapp
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Run the frontend with a static server from the project root:
+
+```bash
+npx http-server .
+```
+
+Then open one of these pages in your browser:
+
+- http://127.0.0.1:8080/frontend/seller.html
+- http://127.0.0.1:8080/frontend/agent.html
+- http://127.0.0.1:8080/frontend/buyer.html
+
+## MetaMask and testnet accounts
+
+1. Install the MetaMask browser extension.
+2. In MetaMask, switch network to Sepolia.
+3. Import or create Sepolia test accounts in MetaMask.
+4. Use a Sepolia faucet to get test ETH for those accounts.
+5. Reload the opened page. The DApp will request account access and load your MetaMask accounts.
+
+### It is recommended to have at least 3 accounts (one account per role) to test this code. Also the operations with smart contract will require some test funds (can be obtained for free)
+
+## Local Ganache + Truffle (deprecated)
+
+It is still possible to run the project locally using Ganache CLI and Truffle, but this method is considered deprecated for this repository.
+
+Example local flow:
+
+```bash
+# terminal 1
+ganache-cli
+
+# terminal 2
+truffle migrate --network development
+```
+
+After migration, keep using a static server to open the frontend pages.
 
 ## Business Logic
 
